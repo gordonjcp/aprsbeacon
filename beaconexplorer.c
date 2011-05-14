@@ -22,8 +22,9 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
-
-#include "osm-gps-map.h"
+#include <osm-gps-map.h>
+#include <gps.h>
+#include <errno.h>
 
 static OsmGpsMapSource_t opt_map_provider = OSM_GPS_MAP_SOURCE_OPENSTREETMAP;
 static gboolean opt_friendly_cache = FALSE;
@@ -42,6 +43,8 @@ static GOptionEntry entries[] =
 
 static GdkPixbuf *g_star_image = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
+
+static struct gps_data_t gpsdata;
 
 static gboolean
 on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
@@ -293,6 +296,13 @@ main (int argc, char **argv)
     // centre on UK, because I'm UK-centric
     osm_gps_map_set_center_and_zoom(map, 55.93, -4.16, 12);
 
+
+	// Connect to GPS (FIXME move to thread)
+    if (gps_open("localhost", "2947", &gpsdata) != 0) {
+		printf("no gpsd: %d, %s\n", errno, gps_errstr(errno));
+		exit(2);
+    }
+
     //Connect to signals
     g_signal_connect (
                 gtk_builder_get_object(builder, "zoom_in_button"), "clicked",
@@ -330,6 +340,8 @@ main (int argc, char **argv)
 
     //g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MASK, g_log_default_handler, NULL);
     gtk_main ();
+
+	gps_close(&gpsdata);
 
     return 0;
 }
