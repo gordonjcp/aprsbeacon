@@ -44,10 +44,21 @@ static GOptionEntry entries[] =
 };
 
 static GdkPixbuf *g_red_pin = NULL;
+static GdkPixbuf *g_green_pin = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
 OsmGpsMapTrack *gpstrack;
 OsmGpsMapTrack *aprstrack;
+OsmGpsMapTrack *smarttrack;
 static gdouble next_time;
+
+
+float high_speed = 60;
+float fast_rate = 180;
+float slow_speed = 5;
+float slow_rate = 1800;
+float min_turn_time = 15;
+float min_turn_angle = 30;
+float turn_slope = 25;
 
 static struct gps_data_t gpsdata;
 static struct fixsource_t source;
@@ -83,6 +94,11 @@ static gboolean gpsd_data_cb(GIOChannel *src, GIOCondition condition, gpointer d
                                     g_red_pin);
         g_object_set (g_last_image, "y-align", 0.99f, NULL);
 	}
+	
+	
+	
+	
+	
 	
 	return TRUE;
 	
@@ -313,7 +329,9 @@ main (int argc, char **argv)
     osm_gps_map_track_add(OSM_GPS_MAP(map), gpstrack);
     aprstrack = osm_gps_map_track_new();
     osm_gps_map_track_add(OSM_GPS_MAP(map), aprstrack);
-    
+    smarttrack = osm_gps_map_track_new();
+    osm_gps_map_track_add(OSM_GPS_MAP(map), smarttrack);
+        
     // make the GPS track blue
     GdkColor c;
     osm_gps_map_track_get_color(gpstrack, &c);
@@ -321,6 +339,14 @@ main (int argc, char **argv)
     c.blue = 0xffff;
     c.green = 0;
 	g_object_set(gpstrack, "color", &c, NULL);
+
+	// make the smartbeacon track green
+    osm_gps_map_track_get_color(smarttrack, &c);
+    c.red = 0;
+    c.blue = 0;
+    c.green = 0x8000;
+	g_object_set(smarttrack, "color", &c, NULL);
+
 
     g_free(cachedir);
     g_free(cachebasedir);
@@ -333,7 +359,8 @@ main (int argc, char **argv)
     osm_gps_map_set_keyboard_shortcut(map, OSM_GPS_MAP_KEY_RIGHT, GDK_Right);
 
     //Build the UI
-    g_red_pin = gdk_pixbuf_new_from_file_at_size ("red.png", 24,24,NULL);
+    g_red_pin = gdk_pixbuf_new_from_file_at_size ("red.png", 22,37,NULL);
+    g_green_pin = gdk_pixbuf_new_from_file_at_size ("green.png", 22,37,NULL);
 
     builder = gtk_builder_new();
     gtk_builder_add_from_file (builder, "beaconexplorer.ui", &error);
