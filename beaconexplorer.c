@@ -109,7 +109,7 @@ on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_d
             osm_gps_map_track_add_point(othertrack, &coord);
         }
     }
-
+/*
     if (event->type == GDK_BUTTON_PRESS) {
         if (event->button == 2) {
         osm_gps_map_convert_screen_to_geographic(map, event->x, event->y, &coord);
@@ -121,6 +121,7 @@ on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_d
                                     g_star_image);
         }
     }
+    */
     return FALSE;
 }
 
@@ -304,6 +305,7 @@ main (int argc, char **argv)
     aprstrack = osm_gps_map_track_new();
     osm_gps_map_track_add(OSM_GPS_MAP(map), aprstrack);
     
+    // make the GPS track blue
     GdkColor c;
     osm_gps_map_track_get_color(gpstrack, &c);
     c.red = 0;
@@ -322,7 +324,7 @@ main (int argc, char **argv)
     osm_gps_map_set_keyboard_shortcut(map, OSM_GPS_MAP_KEY_RIGHT, GDK_Right);
 
     //Build the UI
-    g_star_image = gdk_pixbuf_new_from_file_at_size ("poi.png", 24,24,NULL);
+    g_blue_pin = gdk_pixbuf_new_from_file_at_size ("blue.png", 24,24,NULL);
 
     builder = gtk_builder_new();
     gtk_builder_add_from_file (builder, "beaconexplorer.ui", &error);
