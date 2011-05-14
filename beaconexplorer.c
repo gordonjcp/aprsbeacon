@@ -27,6 +27,7 @@
 #include <errno.h>
 #include "gpsdclient.h"
 
+static OsmGpsMap *map;
 static OsmGpsMapSource_t opt_map_provider = OSM_GPS_MAP_SOURCE_OPENSTREETMAP;
 static gboolean opt_friendly_cache = FALSE;
 static gboolean opt_no_cache = FALSE;
@@ -42,7 +43,7 @@ static GOptionEntry entries[] =
   { NULL }
 };
 
-static GdkPixbuf *g_blue_pin = NULL;
+static GdkPixbuf *g_red_pin = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
 OsmGpsMapTrack *gpstrack;
 OsmGpsMapTrack *aprstrack;
@@ -71,7 +72,16 @@ static gboolean gpsd_data_cb(GIOChannel *src, GIOCondition condition, gpointer d
 		printf("aprs point\n");
 		next_time = time+180;
 		osm_gps_map_point_set_degrees(&coord, gpsdata.fix.latitude, gpsdata.fix.longitude);
+		
 		osm_gps_map_track_add_point(aprstrack, &coord);
+
+		
+		g_last_image = osm_gps_map_image_add (
+		                            map,
+                                    gpsdata.fix.latitude,
+                                    gpsdata.fix.longitude,
+                                    g_red_pin);
+        g_object_set (g_last_image, "y-align", 0.99f, NULL);
 	}
 	
 	return TRUE;
@@ -226,7 +236,6 @@ main (int argc, char **argv)
     GtkBuilder *builder;
     GtkWidget *widget;
     GtkAccelGroup *ag;
-    OsmGpsMap *map;
     OsmGpsMapLayer *osd;
     OsmGpsMapTrack *rightclicktrack;
     const char *repo_uri;
@@ -324,7 +333,7 @@ main (int argc, char **argv)
     osm_gps_map_set_keyboard_shortcut(map, OSM_GPS_MAP_KEY_RIGHT, GDK_Right);
 
     //Build the UI
-    g_blue_pin = gdk_pixbuf_new_from_file_at_size ("blue.png", 24,24,NULL);
+    g_red_pin = gdk_pixbuf_new_from_file_at_size ("red.png", 24,24,NULL);
 
     builder = gtk_builder_new();
     gtk_builder_add_from_file (builder, "beaconexplorer.ui", &error);
