@@ -42,7 +42,7 @@ static GOptionEntry entries[] =
   { NULL }
 };
 
-static GdkPixbuf *g_star_image = NULL;
+static GdkPixbuf *g_blue_pin = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
 OsmGpsMapTrack *gpstrack;
 OsmGpsMapTrack *aprstrack;
