@@ -390,7 +390,7 @@ main (int argc, char **argv)
 
     gtk_widget_show_all (widget);
 
-    g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MASK, g_log_default_handler, NULL);
+    //g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MASK, g_log_default_handler, NULL);
     gtk_main ();
 
     return 0;
