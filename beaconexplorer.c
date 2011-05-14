@@ -44,6 +44,8 @@ static GOptionEntry entries[] =
 
 static GdkPixbuf *g_star_image = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
+OsmGpsMapTrack *gpstrack;
+
 
 static struct gps_data_t gpsdata;
 static struct fixsource_t source;
@@ -54,8 +56,13 @@ static GIOChannel *gpsd_io_channel =NULL;
 static gboolean gpsd_data_cb(GIOChannel *src, GIOCondition condition, gpointer data) {
 	printf("in callback\n");
 	int ret;
+    OsmGpsMapPoint coord;
 	ret = gps_read(&gpsdata);
 	printf("Speed: %f\n", gpsdata.fix.speed);
+	if (!isnan(gpsdata.fix.latitude)) {
+		osm_gps_map_point_set_degrees(&coord, gpsdata.fix.latitude, gpsdata.fix.longitude);
+		osm_gps_map_track_add_point(gpstrack, &coord);
+	}
 }
 
 static gboolean
@@ -276,6 +283,11 @@ main (int argc, char **argv)
     //Add a second track for right clicks
     rightclicktrack = osm_gps_map_track_new();
     osm_gps_map_track_add(OSM_GPS_MAP(map), rightclicktrack);
+
+
+   //Add the raw GPS track
+    gpstrack = osm_gps_map_track_new();
+    osm_gps_map_track_add(OSM_GPS_MAP(map), gpstrack);
 
     g_free(cachedir);
     g_free(cachebasedir);
