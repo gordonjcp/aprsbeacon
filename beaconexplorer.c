@@ -25,6 +25,7 @@
 #include <osm-gps-map.h>
 #include <gps.h>
 #include <errno.h>
+#include "gpsdclient.h"
 
 static OsmGpsMapSource_t opt_map_provider = OSM_GPS_MAP_SOURCE_OPENSTREETMAP;
 static gboolean opt_friendly_cache = FALSE;
@@ -45,6 +46,17 @@ static GdkPixbuf *g_star_image = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
 
 static struct gps_data_t gpsdata;
+static struct fixsource_t source;
+static guint sid3; // FIXME
+static guint flags = WATCH_ENABLE;
+static GIOChannel *gpsd_io_channel =NULL;
+
+static gboolean gpsd_data_cb(GIOChannel *src, GIOCondition condition, gpointer data) {
+	printf("in callback\n");
+	int ret;
+	ret = gps_read(&gpsdata);
+	printf("Speed: %f\n", gpsdata.fix.speed);
+}
 
 static gboolean
 on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
@@ -200,6 +212,7 @@ main (int argc, char **argv)
     char *cachedir, *cachebasedir;
     GError *error = NULL;
     GOptionContext *context;
+	GIOChannel *gio_read;
 
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
@@ -302,6 +315,11 @@ main (int argc, char **argv)
 		printf("no gpsd: %d, %s\n", errno, gps_errstr(errno));
 		exit(2);
     }
+	gps_stream(&gpsdata, flags, source.device);
+	gpsd_io_channel = g_io_channel_unix_new(gpsdata.gps_fd);
+	g_io_channel_set_flags(gpsd_io_channel, G_IO_FLAG_NONBLOCK, NULL);
+
+	sid3 = g_io_add_watch_full(gpsd_io_channel, G_PRIORITY_HIGH_IDLE+200, G_IO_IN | G_IO_PRI, gpsd_data_cb, NULL, NULL);
 
     //Connect to signals
     g_signal_connect (
