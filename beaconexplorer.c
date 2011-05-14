@@ -58,7 +58,10 @@ float slow_speed = 5;
 float slow_rate = 1800;
 float min_turn_time = 15;
 float min_turn_angle = 30;
-float turn_slope = 25;
+float turn_slope = 240;
+
+double speed, track, secs_since_beacon, hcsb, beacon_time;
+double turn_threshold, beacon_rate, old_track=-1;
 
 static struct gps_data_t gpsdata;
 static struct fixsource_t source;
@@ -68,16 +71,28 @@ static GIOChannel *gpsd_io_channel =NULL;
 
 static gboolean gpsd_data_cb(GIOChannel *src, GIOCondition condition, gpointer data) {
 	int ret;
-	gdouble time;
+	gdouble time, speed;
     OsmGpsMapPoint coord;
 	ret = gps_read(&gpsdata);
-	printf("Speed: %f\n", gpsdata.fix.speed);
+
 	if (!isnan(gpsdata.fix.latitude)) {
 		osm_gps_map_point_set_degrees(&coord, gpsdata.fix.latitude, gpsdata.fix.longitude);
 		osm_gps_map_track_add_point(gpstrack, &coord);
 	}
 	
+			if (!isnan(gpsdata.fix.speed)) speed=gpsdata.fix.speed*2.24;
+			if (!isnan(gpsdata.fix.track)) track=gpsdata.fix.track;
+	
+	
+	if ((beacon_time==0) || (secs_since_beacon<0)) {
+		printf("init beacon time\n");
+		beacon_time=time;
+	}
+	
+	
 	time = gpsdata.fix.time;
+	
+	
 	
 	if (time>next_time) {
 		printf("aprs point\n");
@@ -94,10 +109,51 @@ static gboolean gpsd_data_cb(GIOChannel *src, GIOCondition condition, gpointer d
                                     g_red_pin);
         g_object_set (g_last_image, "y-align", 0.99f, NULL);
 	}
+#if 0
+printf("\n===============================================\n");	
+printf("ssb: %f\ntime until beacon: %f\nbeacon_rate: %f\n", secs_since_beacon, beacon_rate-secs_since_beacon, beacon_rate);
+printf("track: %f\noldtrack: %f\n", track, old_track);
+printf("hcsb: %f\ntt: %f\nmtt: %f\n", hcsb, turn_threshold, min_turn_time);
+#endif 
+
+	// calculate smart beacon
+	secs_since_beacon = time-beacon_time;
+	if (speed < slow_speed) {
+		//printf("low speed = %f\n", speed);
+		beacon_rate = slow_rate;
+	} else {
+		if (speed > high_speed) {
+			//printf("high speed = %f\n", speed);
+			beacon_rate = fast_rate;
+		} else {
+			beacon_rate = fast_rate * high_speed/speed;
+		}
+		if (old_track == -1) old_track = track;
+		hcsb = fabs(track - old_track);
+		if (hcsb > 180) hcsb = 360 - hcsb;
+		turn_threshold = min_turn_angle + turn_slope / speed;
+		if (hcsb > turn_threshold && secs_since_beacon > min_turn_time) {
+			secs_since_beacon = beacon_rate;
+		}
 	
-	
-	
-	
+	}
+	if (secs_since_beacon >= beacon_rate) {
+		//printf("***************************************** BEACON\n");
+		osm_gps_map_point_set_degrees(&coord, gpsdata.fix.latitude, gpsdata.fix.longitude);
+		osm_gps_map_track_add_point(smarttrack, &coord);
+
+		
+		g_last_image = osm_gps_map_image_add (
+		                            map,
+                                    gpsdata.fix.latitude,
+                                    gpsdata.fix.longitude,
+                                    g_green_pin);
+        g_object_set (g_last_image, "y-align", 0.99f, NULL);
+		
+		
+		beacon_time = time;
+		old_track=track;
+	}
 	
 	
 	return TRUE;
@@ -111,43 +167,6 @@ on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_d
     float lat, lon;
     OsmGpsMap *map = OSM_GPS_MAP(widget);
     OsmGpsMapTrack *othertrack = OSM_GPS_MAP_TRACK(user_data);
-
-    if (event->type == GDK_3BUTTON_PRESS) {
-        if (event->button == 1) {
-            if (g_last_image)
-                osm_gps_map_image_remove (map, g_last_image);
-        }
-        if (event->button == 3) {
-            osm_gps_map_track_remove(map, othertrack);
-        }
-    }
-
-    if (event->type == GDK_2BUTTON_PRESS) {
-        osm_gps_map_convert_screen_to_geographic(map, event->x, event->y, &coord);
-        osm_gps_map_point_get_degrees(&coord, &lat, &lon);
-        if (event->button == 1) {
-            osm_gps_map_gps_add (map,
-                                 lat,
-                                 lon,
-                                 g_random_double_range(0,360));
-        }
-        if (event->button == 3) {
-            osm_gps_map_track_add_point(othertrack, &coord);
-        }
-    }
-/*
-    if (event->type == GDK_BUTTON_PRESS) {
-        if (event->button == 2) {
-        osm_gps_map_convert_screen_to_geographic(map, event->x, event->y, &coord);
-        osm_gps_map_point_get_degrees(&coord, &lat, &lon);
-            g_last_image = osm_gps_map_image_add (
-                                    map,
-                                    lat,
-                                    lon,
-                                    g_star_image);
-        }
-    }
-    */
     return FALSE;
 }
 
