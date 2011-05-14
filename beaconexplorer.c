@@ -45,7 +45,8 @@ static GOptionEntry entries[] =
 static GdkPixbuf *g_star_image = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
 OsmGpsMapTrack *gpstrack;
-
+OsmGpsMapTrack *aprstrack;
+static gdouble next_time;
 
 static struct gps_data_t gpsdata;
 static struct fixsource_t source;
@@ -54,8 +55,8 @@ static guint flags = WATCH_ENABLE;
 static GIOChannel *gpsd_io_channel =NULL;
 
 static gboolean gpsd_data_cb(GIOChannel *src, GIOCondition condition, gpointer data) {
-	printf("in callback\n");
 	int ret;
+	gdouble time;
     OsmGpsMapPoint coord;
 	ret = gps_read(&gpsdata);
 	printf("Speed: %f\n", gpsdata.fix.speed);
@@ -63,6 +64,18 @@ static gboolean gpsd_data_cb(GIOChannel *src, GIOCondition condition, gpointer d
 		osm_gps_map_point_set_degrees(&coord, gpsdata.fix.latitude, gpsdata.fix.longitude);
 		osm_gps_map_track_add_point(gpstrack, &coord);
 	}
+	
+	time = gpsdata.fix.time;
+	
+	if (time>next_time) {
+		printf("aprs point\n");
+		next_time = time+180;
+		osm_gps_map_point_set_degrees(&coord, gpsdata.fix.latitude, gpsdata.fix.longitude);
+		osm_gps_map_track_add_point(aprstrack, &coord);
+	}
+	
+	return TRUE;
+	
 }
 
 static gboolean
@@ -285,9 +298,18 @@ main (int argc, char **argv)
     osm_gps_map_track_add(OSM_GPS_MAP(map), rightclicktrack);
 
 
-   //Add the raw GPS track
+   //Add the raw GPS track and APRS track
     gpstrack = osm_gps_map_track_new();
     osm_gps_map_track_add(OSM_GPS_MAP(map), gpstrack);
+    aprstrack = osm_gps_map_track_new();
+    osm_gps_map_track_add(OSM_GPS_MAP(map), aprstrack);
+    
+    GdkColor c;
+    osm_gps_map_track_get_color(gpstrack, &c);
+    c.red = 0;
+    c.blue = 0xffff;
+    c.green = 0;
+	g_object_set(gpstrack, "color", &c, NULL);
 
     g_free(cachedir);
     g_free(cachebasedir);
@@ -311,12 +333,6 @@ main (int argc, char **argv)
                 GTK_BOX(gtk_builder_get_object(builder, "map_box")),
                 GTK_WIDGET(map), TRUE, TRUE, 0);
 
-    //Init values
-    float lw,a;
-    GdkColor c;
-    OsmGpsMapTrack *gpstrack = osm_gps_map_gps_get_track (map);
-    g_object_get (gpstrack, "line-width", &lw, "alpha", &a, NULL);
-    osm_gps_map_track_get_color(gpstrack, &c);
     
     // centre on UK, because I'm UK-centric
     osm_gps_map_set_center_and_zoom(map, 55.93, -4.16, 12);
