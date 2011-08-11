@@ -33,8 +33,8 @@ static GError *aprsis_connect(aprsis_ctx *ctx) {
 	client = g_socket_client_new();
 	// FIXME don't hardcode the port and server
 
-	//GSocketConnection *conn = g_socket_client_connect_to_host(client, "www.gjcp.net", 14580, NULL, &err); // FIXME needs to convert string to int
-	GSocketConnection *conn = g_socket_client_connect_to_host(client, "euro.aprs2.net", 14580, NULL, &err); // FIXME needs to convert string to int
+	GSocketConnection *conn = g_socket_client_connect_to_host(client, "www.gjcp.net", 10152, NULL, &err); // FIXME needs to convert string to int
+	//GSocketConnection *conn = g_socket_client_connect_to_host(client, "euro.aprs2.net", 14580, NULL, &err); // FIXME needs to convert string to int
 	if (conn) {
 		ctx->skt = g_socket_connection_get_socket(conn);
 	}
@@ -104,6 +104,15 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	return TRUE;
 }
 
+static gboolean aprsis_reconnect(void *ptr) {
+	aprsis_ctx *ctx = ptr;
+	printf("in aprsis_reconnect\n");
+	// @DDHHMM/DDMM.hhN/DDDMM.hhW$CSE/SPD/comments...
+	char buf[256]="MM0YEQ-11>APZGJC,TCPIP*,qAC,MM0YEQ:@110044z5551.30N/00430.60W$090/030/hello world\r\n";
+	aprsis_write(ctx, buf, strlen(buf));
+	printf("buf=%s\n", buf);
+	return FALSE;
+}
 
 static gboolean
 aprsis_io_error(GIOChannel *src, GIOCondition condition, void *ptr)
@@ -176,7 +185,7 @@ static void start_aprsis_thread(void *ptr) {
         g_error ("Cannot add watch on GIOChannel G_IO_ERR or G_IO_HUP");
 
 	ctx->state = APRSIS_CONNECTED;
-	
+	reconnect_timer = g_timeout_add_seconds(4, aprsis_reconnect, ctx);
 }
 
 
