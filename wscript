@@ -29,13 +29,12 @@ def build(bld):
         uselib = "GLIB GIO GPS",
         includes = '. /usr/include')
     # aprsmap
-    """    bld(
+    bld(
         features = 'c cprogram',
         source = ['beaconexplorer.c'],
-        target = 'beaconexplorer.c',
+        target = 'beaconexplorer',
         uselib = "GTK OSMGPSMAP GPS",
         includes = '. /usr/include')
-"""
   
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=8
     	

@@ -28,3 +28,5 @@ typedef struct _aprsis_ctx {
 	char *user;
 	char *pass;
 } aprsis_ctx;
+
+int aprsis_write(aprsis_ctx *ctx, char *buf, size_t len);

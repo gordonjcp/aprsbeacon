@@ -20,8 +20,11 @@
 #include <gps.h>
 #include <errno.h>
 #include <math.h>
+#include <string.h>
 #include "gpsdclient.h"
 #include "aprsis.h"
+
+aprsis_ctx ctx;
 
 GMainLoop *main_loop = NULL;
 
@@ -42,10 +45,15 @@ float slow_rate = 1800;
 float min_turn_time = 15;
 float min_turn_angle = 30;
 float turn_slope = 240;
-
+gdouble gtime, speed, lat, lon;
 static gboolean gpsd_data_cb(GIOChannel *src, GIOCondition condition, gpointer data) {
 	int ret;
-	gdouble time, speed, lat, lon;
+
+	char pbuf[256];
+	
+	time_t     now;
+    struct tm *ts;
+    char       buf[80];
 
 	ret = gps_read(&gpsdata);
 
@@ -59,14 +67,19 @@ static gboolean gpsd_data_cb(GIOChannel *src, GIOCondition condition, gpointer d
 	
 	if ((beacon_time==0) || (secs_since_beacon<0)) {
 		printf("init beacon time\n");
-		beacon_time=time;
+		beacon_time=gtime;
 	}
 	
-	time = gpsdata.fix.time;
+	
 
-	if (time>next_time) {
+
+    if(!isnan(gpsdata.fix.time)) gtime = gpsdata.fix.time;
+
+
+
+	if (gtime>next_time) {
 		printf("3 min point\n");
-		next_time = time+180;
+		next_time = gtime+180;
 	}
 #if 0
 printf("\n===============================================\n");	
@@ -76,7 +89,7 @@ printf("hcsb: %f\ntt: %f\nmtt: %f\n", hcsb, turn_threshold, min_turn_time);
 #endif 
 
 	// calculate smart beacon
-	secs_since_beacon = time-beacon_time;
+	secs_since_beacon = gtime-beacon_time;
 	if (speed < slow_speed) {
 		//printf("low speed = %f\n", speed);
 		beacon_rate = slow_rate;
@@ -99,8 +112,25 @@ printf("hcsb: %f\ntt: %f\nmtt: %f\n", hcsb, turn_threshold, min_turn_time);
 	if (secs_since_beacon >= beacon_rate) {
 		//printf("***************************************** BEACON\n");
         printf("smart beacon\n");
-		beacon_time = time;
-		old_track=track;
+        
+    	now = (time_t) gtime;
+    	ts = gmtime(&now);
+        strftime(buf, sizeof(buf), "%d%H%Mz", ts);
+//	char buf[256]="MM0YEQ-11>APZGJC:@112149z5551.30N/00430.60W$118/032/moving\r\n";
+        float latmin, lonmin;
+        latmin = (lat - trunc(lat))*60;
+        lonmin = -(lon - trunc(lon))*60;
+        
+        printf("%f %f\n", lat, lon);
+        sprintf(pbuf, "MM0YEQ-10>APZGJC:@%s%02.0f%05.2fN/%03.0f%05.2fW$%03.0f/%03.0f/message\n", buf, trunc(lat),latmin,-trunc(lon),lonmin, track, speed);
+       printf("ctx= %x\n", ctx);
+       if(&ctx !=0) {
+            printf("sending\n");
+       	aprsis_write(&ctx, pbuf, strlen(pbuf));
+       	}
+	printf("pbuf=%s\n", pbuf);
+    	beacon_time = gtime;
+    	old_track=track;
 	}
 	
 	
@@ -114,7 +144,7 @@ int main (int argc, gchar *argv[])
     GError *error = NULL;
 	GIOChannel *gio_read;
 
-    aprsis_ctx ctx;
+
     ctx.user = "mm0yeq";
     ctx.pass = "-1";
     ctx.state = APRSIS_DISCONNECTED;
@@ -123,7 +153,7 @@ int main (int argc, gchar *argv[])
     g_type_init();
     
     g_message("opening aprs-is");
-    //start_aprsis(&ctx);
+    start_aprsis(&ctx);
 
     g_message("opening gpsd");
 	// Connect to GPS (FIXME move to thread)
