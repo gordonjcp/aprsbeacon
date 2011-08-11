@@ -33,8 +33,8 @@ static GError *aprsis_connect(aprsis_ctx *ctx) {
 	client = g_socket_client_new();
 	// FIXME don't hardcode the port and server
 
-	GSocketConnection *conn = g_socket_client_connect_to_host(client, "www.gjcp.net", 14580, NULL, &err); // FIXME needs to convert string to int
-	
+	//GSocketConnection *conn = g_socket_client_connect_to_host(client, "www.gjcp.net", 14580, NULL, &err); // FIXME needs to convert string to int
+	GSocketConnection *conn = g_socket_client_connect_to_host(client, "euro.aprs2.net", 14580, NULL, &err); // FIXME needs to convert string to int
 	if (conn) {
 		ctx->skt = g_socket_connection_get_socket(conn);
 	}
@@ -94,16 +94,6 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	
 	if (msg[0] == '#') {
 		g_printf("can ignore comment message: %s\n", msg);
-	} else if (ctx->state == APRSIS_CONNECTED) {
-		sprintf(msg, APRSIS_LOGIN"\n", "mm0yeq", "19367");
-		printf("sending %s\n",msg);
-		ret = g_io_channel_write_chars (gio, msg, -1, NULL, &err);
-        if (ret == G_IO_STATUS_ERROR) {
-        
-                g_error ("Error writing: %s\n", err->message);
-		} else {
-			ctx->state = APRSIS_LOGIN;
-		}
 	} else {
 		printf("msg=%s\n",msg);
 	
