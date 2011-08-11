@@ -33,7 +33,7 @@ static GError *aprsis_connect(aprsis_ctx *ctx) {
 	client = g_socket_client_new();
 	// FIXME don't hardcode the port and server
 
-	GSocketConnection *conn = g_socket_client_connect_to_host(client, "www.gjcp.net", 10152, NULL, &err); // FIXME needs to convert string to int
+	GSocketConnection *conn = g_socket_client_connect_to_host(client, "rotate.aprs2.net", 14580, NULL, &err); // FIXME needs to convert string to int
 	//GSocketConnection *conn = g_socket_client_connect_to_host(client, "euro.aprs2.net", 14580, NULL, &err); // FIXME needs to convert string to int
 	if (conn) {
 		ctx->skt = g_socket_connection_get_socket(conn);
@@ -63,7 +63,7 @@ int aprsis_write(aprsis_ctx *ctx, char *buf, size_t len) {
 	return count;
 }
 
-#define APRSIS_LOGIN "user %s pass %s vers aprsmap 0.0 filter r/55/-4/600"
+#define APRSIS_LOGIN "user %s pass %s vers aprsbeacon 0.0 "
 static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) {
 	// callback when GIOChannel tells us there's an APRS packet to be handled
 	GIOStatus ret;
