@@ -279,7 +279,7 @@ main (int argc, char **argv)
     GOptionContext *context;
 	GIOChannel *gio_read;
 
-    g_thread_init(NULL);
+//    g_thread_init(NULL);
     gtk_init (&argc, &argv);
 
     context = g_option_context_new ("- Map browser");

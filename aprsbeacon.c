@@ -123,10 +123,9 @@ printf("hcsb: %f\ntt: %f\nmtt: %f\n", hcsb, turn_threshold, min_turn_time);
         
         printf("%f %f\n", lat, lon);
         sprintf(pbuf, "MM0YEQ-10>APZGJC:@%s%02.0f%05.2fN/%03.0f%05.2fW$%03.0f/%03.0f/message\n", buf, trunc(lat),latmin,-trunc(lon),lonmin, track, speed);
-       printf("ctx= %x\n", ctx);
        if(&ctx !=0) {
             printf("sending\n");
-       	aprsis_write(&ctx, pbuf, strlen(pbuf));
+//       	aprsis_write(&ctx, pbuf, strlen(pbuf));
        	}
 	printf("pbuf=%s\n", pbuf);
     	beacon_time = gtime;
@@ -149,7 +148,7 @@ int main (int argc, gchar *argv[])
     ctx.pass = "-1";
     ctx.state = APRSIS_DISCONNECTED;
     
-    g_thread_init(NULL);
+//    g_thread_init(NULL);
     g_type_init();
     
     g_message("opening aprs-is");
@@ -162,7 +161,7 @@ int main (int argc, gchar *argv[])
 		exit(2);
     }
 	gps_stream(&gpsdata, flags, source.device);
-	printf("%x\n", source.device);
+	printf("%s\n", source.device);
 	gpsd_io_channel = g_io_channel_unix_new(gpsdata.gps_fd);
 	g_io_channel_set_flags(gpsd_io_channel, G_IO_FLAG_NONBLOCK, NULL);
 
