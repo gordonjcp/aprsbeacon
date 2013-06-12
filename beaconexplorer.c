@@ -78,22 +78,18 @@ static gboolean gpsd_data_cb(GIOChannel *src, GIOCondition condition, gpointer d
 	if (!isnan(gpsdata.fix.latitude)) {
 		osm_gps_map_point_set_degrees(&coord, gpsdata.fix.latitude, gpsdata.fix.longitude);
 		osm_gps_map_track_add_point(gpstrack, &coord);
+	    osm_gps_map_set_center(map, gpsdata.fix.latitude, gpsdata.fix.longitude);
 	}
 	
-			if (!isnan(gpsdata.fix.speed)) speed=gpsdata.fix.speed*2.24;
-			if (!isnan(gpsdata.fix.track)) track=gpsdata.fix.track;
-	
+	if (!isnan(gpsdata.fix.speed)) speed=gpsdata.fix.speed*2.24;
+	if (!isnan(gpsdata.fix.track)) track=gpsdata.fix.track;
 	
 	if ((beacon_time==0) || (secs_since_beacon<0)) {
 		printf("init beacon time\n");
 		beacon_time=time;
 	}
-	
-	
 	time = gpsdata.fix.time;
-	
-	
-	
+
 	if (time>next_time) {
 		printf("aprs point\n");
 		next_time = time+180;
@@ -156,6 +152,7 @@ printf("hcsb: %f\ntt: %f\nmtt: %f\n", hcsb, turn_threshold, min_turn_time);
 	}
 	
 	
+
 	return TRUE;
 	
 }
@@ -300,6 +297,8 @@ main (int argc, char **argv)
     }
 
     cachebasedir = osm_gps_map_get_default_cache_directory();
+    
+    printf("%s\n", cachebasedir);
 
     if (opt_cache_base_dir && g_file_test(opt_cache_base_dir, G_FILE_TEST_IS_DIR)) {
         cachedir = g_strdup(OSM_GPS_MAP_CACHE_AUTO);

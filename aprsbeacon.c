@@ -28,7 +28,7 @@ aprsis_ctx ctx;
 
 GMainLoop *main_loop = NULL;
 
-static struct gps_data_t gpsdata;
+struct gps_data_t gpsdata;
 static struct fixsource_t source;
 static guint sid3; // FIXME
 static guint flags = WATCH_ENABLE;
@@ -125,7 +125,7 @@ printf("hcsb: %f\ntt: %f\nmtt: %f\n", hcsb, turn_threshold, min_turn_time);
         sprintf(pbuf, "MM0YEQ-10>APZGJC:@%s%02.0f%05.2fN/%03.0f%05.2fW$%03.0f/%03.0f/message\n", buf, trunc(lat),latmin,-trunc(lon),lonmin, track, speed);
        if(&ctx !=0) {
             printf("sending\n");
-//       	aprsis_write(&ctx, pbuf, strlen(pbuf));
+       	aprsis_write(&ctx, pbuf, strlen(pbuf));
        	}
 	printf("pbuf=%s\n", pbuf);
     	beacon_time = gtime;
@@ -160,12 +160,21 @@ int main (int argc, gchar *argv[])
 		printf("no gpsd: %d, %s\n", errno, gps_errstr(errno));
 		exit(2);
     }
-	gps_stream(&gpsdata, flags, source.device);
-	printf("%s\n", source.device);
+    
+    printf("%x\n", gpsdata);
+    printf("%x\n", flags);
+    
+    //sleep(1);
+    
+	gps_stream(&gpsdata, flags, NULL);
+	//printf("%s\n", source.device);
+	printf("started stream\n");
 	gpsd_io_channel = g_io_channel_unix_new(gpsdata.gps_fd);
 	g_io_channel_set_flags(gpsd_io_channel, G_IO_FLAG_NONBLOCK, NULL);
 
 	sid3 = g_io_add_watch(gpsd_io_channel, G_IO_IN | G_IO_PRI, gpsd_data_cb, NULL);
+
+    printf("about to start main loop\n");
 
 	main_loop = g_main_loop_new (NULL, FALSE);
 	g_main_loop_run (main_loop);
