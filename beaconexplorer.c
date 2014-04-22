@@ -28,7 +28,7 @@
 #include "gpsdclient.h"
 
 static OsmGpsMap *map;
-static OsmGpsMapSource_t opt_map_provider = OSM_GPS_MAP_SOURCE_OPENSTREETMAP;
+static OsmGpsMapSource_t opt_map_provider = OSM_GPS_MAP_SOURCE_VIRTUAL_EARTH_HYBRID;
 static gboolean opt_friendly_cache = FALSE;
 static gboolean opt_no_cache = FALSE;
 static gboolean opt_debug = FALSE;
@@ -362,7 +362,7 @@ main (int argc, char **argv)
     osm_gps_map_track_get_color(smarttrack, &c);
     c.red = 0;
     c.blue = 0;
-    c.green = 0x8000;
+    c.green = 0xffff;
 	g_object_set(smarttrack, "color", &c, NULL);
 
 
